@@ -1,32 +1,18 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
+const registerBot = require("./register");
 
 /* =====================
-   CONFIG
+  INIT (polling for local/dev)
 ===================== */
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const BOT_PASSWORD = String(process.env.BOT_PASSWORD || "3322");
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8090/api";
-
-const BRANCH = "PITSA";
-const BRANCH_LABEL = "PITSA";
-
-/* =====================
-   INIT
-===================== */
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-
-const API = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000,
-});
-
-/* =====================
-   AUTH + STATE
-===================== */
-const authState = new Map();
-const chatState = new Map();
+if (BOT_TOKEN) {
+  const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+  registerBot(bot);
+  console.log("🤖 BOT RUNNING (polling)");
+} else {
+  console.log("⚠️ BOT_TOKEN not provided, skipping polling bot start");
+}
 
 /* =====================
    DATE UTILS
@@ -270,36 +256,4 @@ bot.on("callback_query", async (q) => {
 /* =====================
    TEXT INPUT
 ===================== */
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
-  const text = String(msg.text || "").trim();
-
-  if (text.startsWith("/")) return;
-
-  if (!authState.get(chatId)) {
-    if (text === BOT_PASSWORD) {
-      authState.set(chatId, true);
-      return bot.sendMessage(
-        chatId,
-        `✅ Kirish muvaffaqiyatli\n🏢 ${BRANCH_LABEL}\n📅 ${rangeText(
-          st(chatId)
-        )}`,
-        mainMenu(chatId)
-      );
-    }
-    return bot.sendMessage(chatId, "❌ Parol noto‘g‘ri");
-  }
-
-  if (isYMD(text)) {
-    setRange(chatId, text, text, "day");
-    return bot.sendMessage(chatId, "✅ Sana tanlandi", mainMenu(chatId));
-  }
-
-  const p = text.split(" ");
-  if (p.length === 2 && isYMD(p[0]) && isYMD(p[1])) {
-    setRange(chatId, p[0], p[1], "range");
-    return bot.sendMessage(chatId, "✅ Sana tanlandi", mainMenu(chatId));
-  }
-});
-
-console.log("🤖 BOT RUNNING (GLOBAL ORDERS)");
+// Polling bot started above when BOT_TOKEN present.
